@@ -1,0 +1,4 @@
+productType,productId,inventoryId,articleId,productName,productDescription,basePrice,currencyCode,imageUrl
+cookie,P1,SKU101,A101,RedWinerru,You will look good in this,1123,EUR,https://s3-eu-west-1.amazonaws.com/commercetools-maximilian/products/081455_1_medium.jpg
+cookie,P2,SKU102,A102,BlueWine,You will look good in this,1000,EUR,https://s3-eu-west-1.amazonaws.com/commercetools-maximilian/products/081455_1_medium.jpg
+cookie,P3,SKU103,A103,PinkWine,You will like this,200,EUR,https://s3-eu-west-1.amazonaws.com/commercetools-maximilian/products/081455_1_medium.jpg
