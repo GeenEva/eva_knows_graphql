@@ -24,8 +24,8 @@ import static handson.impl.ClientService.createSphereClient;
 import static java.lang.String.format;
 
 
-public class ExerciseMoodle10 {
-    private static final Logger LOG = LoggerFactory.getLogger(ExerciseMoodle10.class);
+public class ProductPersisting {
+    private static final Logger LOG = LoggerFactory.getLogger(ProductPersisting.class);
 
     public static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
 
@@ -56,12 +56,12 @@ public class ExerciseMoodle10 {
     }
 
     private static List<ProductDraft> processInputFile(@Nonnull final String inputFilePath) {
-        final InputStream csvAsStream = ExerciseMoodle10.class.getResourceAsStream(inputFilePath);
+        final InputStream csvAsStream = ProductPersisting.class.getResourceAsStream(inputFilePath);
         final BufferedReader br = new BufferedReader(new InputStreamReader(csvAsStream));
 
         return br.lines()
                  .skip(1) // skip the header of the csv
-                 .map(ExerciseMoodle10::processLine)
+                 .map(ProductPersisting::processLine)
                  .collect(Collectors.toList());
     }
 

@@ -4,97 +4,121 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sun.xml.internal.org.jvnet.fastinfoset.stax.LowLevelFastInfosetStreamWriter;
+import io.sphere.sdk.categories.Category;
 import io.sphere.sdk.client.HttpRequestIntent;
 import io.sphere.sdk.client.SphereRequest;
 import io.sphere.sdk.http.HttpMethod;
 import io.sphere.sdk.http.HttpResponse;
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Base;
-import io.sphere.sdk.models.Versioned;
-import io.sphere.sdk.products.Product;
-import io.sphere.sdk.products.ProductIdentifiable;
-import org.apache.commons.lang3.Validate;
+import io.sphere.sdk.models.LocalizedString;
 
 import javax.annotation.Nullable;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static java.util.stream.Collectors.joining;
 
-public class EvaProduct extends Base implements Versioned<Product>, ProductIdentifiable {
+public class EvaProduct {
 
-    private final Long version;
-    private final String id;
-    private final List<String> skus;
+    private String id;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastModifiedAt;
+    private LocalizedString name;
+//    private LocalizedString description;
+//    private Set<Category> categories;
+//    private Set<EvaVariant> veloVariants = new HashSet<>();
 
 
     @JsonCreator
-    public EvaProduct(@JsonProperty("version") final Long version,
-                      @JsonProperty("id") final String id,
-                      @JsonProperty("skus") final List<String> skus) {
-        this.version = version;
+    EvaProduct(@JsonProperty("id")  String id,
+               @JsonProperty("createdAt") LocalDateTime createdAt,
+               @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
+               @JsonProperty("name") LocalizedString name ){
+
         this.id = id;
-        this.skus = skus;
+        this.createdAt = createdAt;
+        this.lastModifiedAt = lastModifiedAt;
+        this.name = name;
     }
 
-    @Override
     public String getId() {
         return id;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getLastModifiedAt() {
+        return lastModifiedAt;
+    }
+
+    public LocalizedString getName(){
+        return name;
+    }
+
+    static SphereRequest<List<EvaProduct>> getAllEvaProducts(){
+        return new GetAllEvaProducts();
+    }
+
+
     @Override
-    public Long getVersion() {
-        return version;
+    public String toString() {
+        return "EvaProduct{" +
+                "id='" + id + '\'' +
+                ", createdAt=" + createdAt +
+                ", lastModifiedAt=" + lastModifiedAt +
+                ", name=" + name +
+                '}';
     }
 
-    public List<String> getSkus(){
-        return skus;
-    }
+    private static class GetAllEvaProducts extends Base implements SphereRequest<List<EvaProduct>> {
 
-    public static SphereRequest<List<EvaProduct>> requestOfSkusEvaProducts(final List<String> skus) {
-        return new EvaProductsBySku(skus);
-    }
+        public static final int MAX = 5;
 
-    private static class EvaProductsBySku extends Base implements SphereRequest<List<EvaProduct>> {
-
-        public static final int MAX = 100;
-        private final List<String> skus;
-
-
-        public EvaProductsBySku(final List<String> skus) {
-            Validate.notEmpty(skus);
-            Validate.isTrue(skus.size() <= MAX, "skus are limited to " + MAX + " elements");
-            this.skus = skus;
-            System.out.println("========= SKUUSS:" + skus);
-        }
 
         @Nullable
         @Override
-        public List<EvaProduct> deserialize(final HttpResponse httpResponse) {
+        public List<EvaProduct> deserialize(HttpResponse httpResponse) {
             final JsonNode rootJsonNode = SphereJsonUtils.parse(httpResponse.getResponseBody());
+
+            System.out.println("========= ROOTJSONNODE: " + rootJsonNode + "\n");
             final JsonNode results = rootJsonNode.get("data").get("products").get("results");
-            return SphereJsonUtils.readObject(results, new TypeReference<List<EvaProduct>>() {
-            });
+            System.out.println("========= RESULTS : " + results +"\n");
+
+            List<EvaProduct> evaProducts = SphereJsonUtils.readObject(results, new TypeReference<List<EvaProduct>>() { });
+
+            for (EvaProduct evaProduct : evaProducts){
+                System.out.println("========= EVAPRODUCTS : " + evaProduct.toString());
+            }
+            return evaProducts;
         }
 
         @Override
         public HttpRequestIntent httpRequestIntent() {
-            final String queryString = String.format("query ProductBySku($skus: [String!]!) {\n" +
-                    "       products(limit: %d, skus: $skus) {\n" +
+            final String queryString = String.format("query product {\n" +
+                    "       products(limit: %d) {\n" +
                     "           results {\n" +
                     "               id\n" +
-                    "               version\n" +
-                    "               skus\n" +
+                    "               createdAt\n" +
+                    "               lastModifiedAt\n" +
+                    "               masterData{\n" +
+                    "                   current{\n" +
+                    "                   name(locale: \"en\")" +
+                    "                   }\n" +
+                    "               }\n" +
                     "           }\n" +
                     "       }\n" +
                     "   }", MAX);
             final String body =String.format(
                     "{\n" +
-                            "   \"query\": \"%s\",\n" +
-                            "   \"variables\": { \"skus\": [%s]}\n" +
-                            "}", queryString.replace("\n", "\\n").replace("\"", "\\\""), skus.stream().distinct().collect(joining("\", \"", "\"", "\"")));
+                            "   \"query\": \"%s\"" +
+                            "}", queryString.replace("\n", "\\n").replace("\"", "\\\""));
             return HttpRequestIntent.of(HttpMethod.POST, "/graphql", body);
         }
-
     }
 
 }
