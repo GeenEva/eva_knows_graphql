@@ -26,12 +26,10 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
     private final String id;
     private final LocalDateTime createdAt;
     private final LocalDateTime lastModifiedAt;
-
-
     private final Map<?,?> masterdata;
-    private final Map<?,?> current;
     private final String name;
-//    private LocalizedString description;
+    private final Map<?,?> productType;
+    private String description;
 //    private Set<Category> categories;
 //    private Set<EvaVariant> veloVariants = new HashSet<>();
 
@@ -44,8 +42,7 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                        @JsonProperty("createdAt") LocalDateTime createdAt,
                        @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
                        @JsonProperty("masterData") Map<?,?> masterdata,
-                       @JsonProperty("current") Map<?,?> current,
-                       @JsonProperty("name") LocalizedString name){
+                        @JsonProperty("productType") Map<?,?> productType){
 
 
         this.version = version;
@@ -53,8 +50,9 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
         this.createdAt = createdAt;
         this.lastModifiedAt = lastModifiedAt;
         this.masterdata = masterdata;
-        this.current = current;
         this.name = ((String)((Map)masterdata.get("current")).get("name"));
+        this.productType = productType;
+        this.description = (String) productType.get("description");
     }
 
 
@@ -73,11 +71,11 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
 
     public Map<?, ?> getMasterdata() { return masterdata; }
 
-    public Map<?, ?> getCurrent() { return current; }
-
     public String getName(){
         return name ;
     }
+
+    public Map<?, ?> getProductType() { return productType; }
 
     static SphereRequest<List<EvaProduct>> getAllEvaProducts(){
         return new GetAllEvaProducts();
@@ -93,6 +91,7 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                 ", \nlastModifiedAt= " + lastModifiedAt +
                 ", \nmasterdata= " + masterdata +
                 ", \nname= " + name +
+                ", \ndescription= " + description +
                 "\n}";
     }
 
@@ -105,14 +104,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
         @Override
         public List<EvaProduct> deserialize(HttpResponse httpResponse) {
 
-
-
-            final JsonNode rootJsonNode = SphereJsonUtils.parse(httpResponse.getResponseBody());
-                         System.out.println("========= ROOTJSONNODE: " + rootJsonNode + "\n");
-            final JsonNode results = rootJsonNode.get("data").get("products").get("results");
-                             System.out.println("========= RESULTS : " + results +"\n");
-           final JsonNode currentname = results.get(0).get("masterData").get("current").get("name");
-            System.out.println("======= CURRENTNAME: " + currentname);
+            final JsonNode results = SphereJsonUtils.parse(httpResponse.getResponseBody())
+                    .get("data").get("products").get("results");
 
             List<EvaProduct> evaProducts = SphereJsonUtils.readObject(results, new TypeReference<List<EvaProduct>>() { });
 
@@ -124,6 +117,9 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
             final String queryString = String.format("query product {\n" +
                     "       products(limit: %d) {\n" +
                     "           results {\n" +
+                    "               productType { \n " +
+                    "                   description\n" +
+                    "                   }\n" +
                     "               version\n" +
                     "               id\n" +
                     "               createdAt\n" +
