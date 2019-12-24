@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sun.xml.internal.org.jvnet.fastinfoset.stax.LowLevelFastInfosetStreamWriter;
-import io.sphere.sdk.categories.Category;
 import io.sphere.sdk.client.HttpRequestIntent;
 import io.sphere.sdk.client.SphereRequest;
 import io.sphere.sdk.http.HttpMethod;
@@ -13,51 +11,72 @@ import io.sphere.sdk.http.HttpResponse;
 import io.sphere.sdk.json.SphereJsonUtils;
 import io.sphere.sdk.models.Base;
 import io.sphere.sdk.models.LocalizedString;
+import io.sphere.sdk.models.Versioned;
+import io.sphere.sdk.products.Product;
+import io.sphere.sdk.products.ProductIdentifiable;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
-public class EvaProduct {
+public class EvaProduct extends Base implements Versioned<Product>, ProductIdentifiable {
 
-    private String id;
-    private LocalDateTime createdAt;
-    private LocalDateTime lastModifiedAt;
-    private LocalizedString name;
+    private final Long version;
+    private final String id;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime lastModifiedAt;
+
+
+    private final Map<?,?> masterdata;
+    private final Map<?,?> current;
+    private final String name;
 //    private LocalizedString description;
 //    private Set<Category> categories;
 //    private Set<EvaVariant> veloVariants = new HashSet<>();
 
 
-    @JsonCreator
-    EvaProduct(@JsonProperty("id")  String id,
-               @JsonProperty("createdAt") LocalDateTime createdAt,
-               @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
-               @JsonProperty("name") LocalizedString name ){
 
+    //Constructor
+    @JsonCreator
+    public  EvaProduct(@JsonProperty("version") Long version,
+                       @JsonProperty("id")  String id,
+                       @JsonProperty("createdAt") LocalDateTime createdAt,
+                       @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
+                       @JsonProperty("masterData") Map<?,?> masterdata,
+                       @JsonProperty("current") Map<?,?> current,
+                       @JsonProperty("name") LocalizedString name){
+
+
+        this.version = version;
         this.id = id;
         this.createdAt = createdAt;
         this.lastModifiedAt = lastModifiedAt;
-        this.name = name;
+        this.masterdata = masterdata;
+        this.current = current;
+        this.name = ((String)((Map)masterdata.get("current")).get("name"));
     }
+
 
     public String getId() {
         return id;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    @Override
+    public Long getVersion() { return null; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     public LocalDateTime getLastModifiedAt() {
         return lastModifiedAt;
     }
 
-    public LocalizedString getName(){
-        return name;
+    public Map<?, ?> getMasterdata() { return masterdata; }
+
+    public Map<?, ?> getCurrent() { return current; }
+
+    public String getName(){
+        return name ;
     }
 
     static SphereRequest<List<EvaProduct>> getAllEvaProducts(){
@@ -67,33 +86,36 @@ public class EvaProduct {
 
     @Override
     public String toString() {
-        return "EvaProduct{" +
-                "id='" + id + '\'' +
-                ", createdAt=" + createdAt +
-                ", lastModifiedAt=" + lastModifiedAt +
-                ", name=" + name +
-                '}';
+        return "\nEvaProduct{" +
+                "\nversion= " + version +
+                ", \nid='" + id + '\'' +
+                ", \ncreatedAt= " + createdAt +
+                ", \nlastModifiedAt= " + lastModifiedAt +
+                ", \nmasterdata= " + masterdata +
+                ", \nname= " + name +
+                "\n}";
     }
 
     private static class GetAllEvaProducts extends Base implements SphereRequest<List<EvaProduct>> {
 
-        public static final int MAX = 5;
+        public static final int MAX = 2;
 
 
         @Nullable
         @Override
         public List<EvaProduct> deserialize(HttpResponse httpResponse) {
-            final JsonNode rootJsonNode = SphereJsonUtils.parse(httpResponse.getResponseBody());
 
-            System.out.println("========= ROOTJSONNODE: " + rootJsonNode + "\n");
+
+
+            final JsonNode rootJsonNode = SphereJsonUtils.parse(httpResponse.getResponseBody());
+                         System.out.println("========= ROOTJSONNODE: " + rootJsonNode + "\n");
             final JsonNode results = rootJsonNode.get("data").get("products").get("results");
-            System.out.println("========= RESULTS : " + results +"\n");
+                             System.out.println("========= RESULTS : " + results +"\n");
+           final JsonNode currentname = results.get(0).get("masterData").get("current").get("name");
+            System.out.println("======= CURRENTNAME: " + currentname);
 
             List<EvaProduct> evaProducts = SphereJsonUtils.readObject(results, new TypeReference<List<EvaProduct>>() { });
 
-            for (EvaProduct evaProduct : evaProducts){
-                System.out.println("========= EVAPRODUCTS : " + evaProduct.toString());
-            }
             return evaProducts;
         }
 
@@ -102,6 +124,7 @@ public class EvaProduct {
             final String queryString = String.format("query product {\n" +
                     "       products(limit: %d) {\n" +
                     "           results {\n" +
+                    "               version\n" +
                     "               id\n" +
                     "               createdAt\n" +
                     "               lastModifiedAt\n" +
