@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.sphere.sdk.categories.Category;
 import io.sphere.sdk.client.HttpRequestIntent;
 import io.sphere.sdk.client.SphereRequest;
 import io.sphere.sdk.http.HttpMethod;
@@ -29,8 +30,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
     private final Map<?,?> masterdata;
     private final String name;
     private final Map<?,?> productType;
-    private String description;
-//    private Set<Category> categories;
+    private final String description;
+    private List<Category> categories;
 //    private Set<EvaVariant> veloVariants = new HashSet<>();
 
 
@@ -42,7 +43,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                        @JsonProperty("createdAt") LocalDateTime createdAt,
                        @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
                        @JsonProperty("masterData") Map<?,?> masterdata,
-                        @JsonProperty("productType") Map<?,?> productType){
+                       @JsonProperty("productType") Map<?,?> productType,
+                       @JsonProperty("categories") List<Category> categories){
 
 
         this.version = version;
@@ -53,8 +55,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
         this.name = ((String)((Map)masterdata.get("current")).get("name"));
         this.productType = productType;
         this.description = (String) productType.get("description");
+        this.categories = (List<Category>)((Map)masterdata.get("current")).get("categories");
     }
-
 
     public String getId() {
         return id;
@@ -92,13 +94,13 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                 ", \nmasterdata= " + masterdata +
                 ", \nname= " + name +
                 ", \ndescription= " + description +
+                ", \ncategories= " + categories +
                 "\n}";
     }
 
     private static class GetAllEvaProducts extends Base implements SphereRequest<List<EvaProduct>> {
 
         public static final int MAX = 2;
-
 
         @Nullable
         @Override
@@ -126,7 +128,10 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                     "               lastModifiedAt\n" +
                     "               masterData{\n" +
                     "                   current{\n" +
-                    "                   name(locale: \"en\")" +
+                    "                       name(locale: \"en\")" +
+                    "                       categories{\n" +
+                    "                           id\n" +
+                    "                        }\n"+
                     "                   }\n" +
                     "               }\n" +
                     "           }\n" +
