@@ -1,5 +1,6 @@
 package handson;
 
+import apple.laf.JRSUIConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -32,7 +33,7 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
     private final Map<?,?> productType;
     private final String description;
     private List<Category> categories;
-//    private Set<EvaVariant> veloVariants = new HashSet<>();
+    private LinkedHashMap<?,?> evaVariants = new LinkedHashMap<>();
 
 
 
@@ -44,8 +45,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                        @JsonProperty("lastModifiedAt") LocalDateTime lastModifiedAt,
                        @JsonProperty("masterData") Map<?,?> masterdata,
                        @JsonProperty("productType") Map<?,?> productType,
-                       @JsonProperty("categories") List<Category> categories){
-
+                       @JsonProperty("categories") List<Category> categories,
+                       @JsonProperty("evaVariants") LinkedHashMap<?,?> evaVariant) {
 
         this.version = version;
         this.id = id;
@@ -56,6 +57,8 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
         this.productType = productType;
         this.description = (String) productType.get("description");
         this.categories = (List<Category>)((Map)masterdata.get("current")).get("categories");
+        ((Map)masterdata.get("current")).get("masterVariant");
+        this.evaVariants = (LinkedHashMap<?,?>)((Map)masterdata.get("current")).get("masterVariant");
     }
 
     public String getId() {
@@ -95,6 +98,7 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                 ", \nname= " + name +
                 ", \ndescription= " + description +
                 ", \ncategories= " + categories +
+                ". \nvariants=" + evaVariants +
                 "\n}";
     }
 
@@ -128,9 +132,12 @@ public class EvaProduct extends Base implements Versioned<Product>, ProductIdent
                     "               lastModifiedAt\n" +
                     "               masterData{\n" +
                     "                   current{\n" +
-                    "                       name(locale: \"en\")" +
-                    "                       categories{\n" +
-                    "                           id\n" +
+                    "                      masterVariant {\n" +
+                    "                           sku \n" +
+                    "                           }\n" +
+                    "                      name(locale: \"en\")" +
+                    "                      categories{\n" +
+                    "                          id\n" +
                     "                        }\n"+
                     "                   }\n" +
                     "               }\n" +
